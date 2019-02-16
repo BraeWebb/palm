@@ -1,3 +1,6 @@
+\usepackage{color}
+\usepackage{listings}
+
 \newcommand{\Year}{2010}
 \newcommand{\Department}{School of Information Technology and Electrical Engineering}
 \newcommand{\Building}{General Purpose South}
@@ -23,3 +26,23 @@
 % 
 % \setlength{\parskip}{2ex plus1ex minus1ex}
 \setlength{\parindent}{0pt}
+
+% Define python and java environment shortcuts
+\lstnewenvironment{python}{\lstset{language=python}}{}
+\lstnewenvironment{java}{\lstset{language=java}}{}
+
+% Custom colors for code
+\definecolor{code}{gray}{0.90}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  frame=single,
+  backgroundcolor=\color{code},
+  escapeinside={<@}{@>},
+  basicstyle=\ttfamily\small
+}
