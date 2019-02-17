@@ -146,11 +146,45 @@ end
 \caption{Example Program}\label{figure:exampleprog}
 \end{figure}
 
-During semantic analysis of the program procedure and variable static levels
+During semantic analysis of the program, procedure and variable static levels
 and variable offsets are determined.
 This information is used by the interpreter to store and load variables within
 the correct scope.
 
+Each call to a procedure creates a new \texttt{Frame} which stores the procedures
+local variables in an array of \texttt{Integer}s. A \texttt{Frame} also stores
+a static link and a dynamic link.
+
+\begin{description}
+\item[a static link] (also called an \emph{access link}) links to the closet
+frame which is one static level above the current frame. The static link
+is used to resolve non-local variables.
+
+\item[a dynamic link] (also called a \emph{control link}) links to the frame
+of the procedure which called the current procedure. The dynamic link
+is used to return to the previous frame when a procedure returns.
+\end{description}
+
+\subsection{Frame Lookup}\label{section:lookup}
+The static levels of procedures and variables as determined by the semantic
+analysis are used to lookup frames. A frame is looked up by a static level,
+the static links are followed until a frame with a matching static level is
+found.
+
+\subsection{Calling a Procedure}\label{section:call}
+When a procedure is called a new frame is entered. The static level of the
+procedure being called is used to lookup the frame which will be used for the
+static link. The current frame is used as the dynamic link of the new frame.
+
+\subsection{Assigning Variables}\label{section:assignment}
+When assigning a variable the static level of the variable is used to lookup
+the frame to store the variable within. The offset of the variable is used
+to assign a value in the frames array of \texttt{Integer}s.
+
+\subsection{Looking Up Variables}\label{section:lookup}
+When looking up a variable the static level of the variable is used to lookup
+the frame where the variable should be stored. The offset of the variable is
+used to index the array of \texttt{Integer}s stored in the frame.
 
 \tikzstyle{staticLink}=[fill=blue!10!orange!10,draw=blue!30!black]
 \tikzstyle{dynamicLink}=[fill=yellow!20,draw=blue!30!black]
@@ -161,10 +195,9 @@ the correct scope.
   \llstructcell{0.5}{freecell}{~} \coordinate (mainHead) at (currentcell.east);
   \structcell[staticLink]{staticLink}
   \structcell[dynamicLink]{dynamicLink}
-  \structcell[freecell]{staticLevel = 0}
-  \structcell[freecell]{proc = \texttt{<main>}}
-  \structcell[freecell]{x = 0}
-  \structcell[freecell]{y = 50}
+  \structcell[freecell]{level = 0}
+  \structcell[freecell]{procedure = \texttt{<main>}}
+  \structcell[freecell]{entries = [0, 50]}
   \structname{
     \begin{tabular}{c}
       \texttt{<main>}
@@ -175,9 +208,9 @@ the correct scope.
   \llstructcell{0.5}{freecell}{~} \coordinate (p2Head) at (currentcell.west);
   \structcell[staticLink]{staticLink} \coordinate (p2sl) at (currentcell.west);
   \structcell[dynamicLink]{dynamicLink} \coordinate (p2dl) at (currentcell.east);
-  \structcell[freecell]{staticLevel = 1}
-  \structcell[freecell]{proc = \texttt{p}}
-  \structcell[freecell]{y = 20}
+  \structcell[freecell]{level = 1}
+  \structcell[freecell]{procedure = \texttt{p}}
+  \structcell[freecell]{entries = [20]}
   \structname{
     \begin{tabular}{c}
       \texttt{p}
@@ -188,9 +221,9 @@ the correct scope.
   \llstructcell{0.5}{freecell}{~} \coordinate (p1Head) at (currentcell.west);
   \structcell[staticLink]{staticLink} \coordinate (p1sl) at (currentcell.west);
   \structcell[dynamicLink]{dynamicLink}  \coordinate (p1dl) at (currentcell.west);
-  \structcell[freecell]{staticLevel = 1}
-  \structcell[freecell]{proc = \texttt{p}}
-  \structcell[freecell]{y = 10}
+  \structcell[freecell]{level = 1}
+  \structcell[freecell]{procedure = \texttt{p}}
+  \structcell[freecell]{entries = [10]}
   \structname{
     \begin{tabular}{c}
       \texttt{p}
@@ -201,8 +234,9 @@ the correct scope.
   \llstructcell{0.5}{freecell}{~} \coordinate (qHead);
   \structcell[staticLink]{staticLink} \coordinate (qsl) at (currentcell.west);
   \structcell[dynamicLink]{dynamicLink} \coordinate (qdl) at (currentcell.west);
-  \structcell[freecell]{staticLevel = 2}
-  \structcell[freecell]{proc = \texttt{q}}
+  \structcell[freecell]{level = 2}
+  \structcell[freecell]{procedure = \texttt{q}}
+  \structcell[freecell]{entries = []}
   \structname{
     \begin{tabular}{c}
       \texttt{q}
@@ -218,5 +252,9 @@ the correct scope.
 \end{tikzpicture}
 \caption{Frames of Example Program}\label{figure:frames}
 \end{figure}
+
+Fig. \ref{figure:frames} is a visual representation of the instances of
+\texttt{Frame} that are created when the example program in Fig.
+\ref{figure:exampleprog} is interpreted.
 
 \end{document}
