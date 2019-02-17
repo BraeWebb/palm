@@ -43,7 +43,7 @@ An interpreter is a type of program, similar to a compiler, which builds an
 abstract syntax tree from input source code. An interpreter differs from a
 compiler in that it does not generate machine code. Instead it will evaluate
 the expression nodes and execute the statement nodes in an abstract syntax tree
-directly in order to run a program.
+directly in order to run the input program.
 
 
 The PL0 Abstract Syntax Tree (AST) is comprised of expression nodes
@@ -112,7 +112,7 @@ public void visitWriteNode(StatementNode
 
 Fig. \ref{figure:exampleprog} is an example PL0 program, it has no functional
 purpose, it is used to demonstrate how frames are implemented within the PL0
-interpreter. It defines a procedure p which calls itself then calls the
+interpreter. It defines a procedure p which calls itself and then calls the
 procedure q.
 
 \begin{figure}[H]
@@ -161,8 +161,8 @@ frame which is one static level above the current frame. The static link
 is used to resolve non-local variables.
 
 \item[a dynamic link] (also called a \emph{control link}) links to the frame
-of the procedure which called the current procedure. The dynamic link
-is used to return to the previous frame when a procedure returns.
+of the calling procedure. The dynamic link is used to return to the previous
+frame when a procedure returns.
 \end{description}
 
 \subsection{Frame Lookup}\label{section:lookup}
