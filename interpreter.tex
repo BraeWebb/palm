@@ -36,6 +36,7 @@
 \author{Brae Webb}
 \maketitle
 \pagestyle{myheadings}
+\markboth{PL0 Interpreter (\today)}{Brae Webb (\today)}
 \vspace*{-4ex}
 
 An interpreter is a type of program, similar to a compiler, which builds an
@@ -109,25 +110,113 @@ public void visitWriteNode(StatementNode
 
 \section{Interpreter Frame}\label{section:frame}
 
-\begin{tikzpicture}
-  \draw (3, -1) node (Otm) {
-    \begin{tabular}{c}
-      Object\\vtable
-    \end{tabular}
-  };
+Fig. \ref{figure:exampleprog} is an example PL0 program, it has no functional
+purpose, it is used to demonstrate how frames are implemented within the PL0
+interpreter. It defines a procedure p which calls itself then calls the
+procedure q.
 
-  \drawstruct{(0,0)}
-  \structcell[freecell]{~} \coordinate (Atm) at (currentcell.east);
-  \structcell[freecell]{\texttt{@Object.equals()}}
-  \structcell[freecell]{\texttt{@code A.m()}}
-  \structcell[freecell]{\texttt{@code A.p()}} \coordinate (A) at (currentcell.east);
+\begin{figure}[H]
+\rule{\columnwidth}{0.5pt}
+\begin{alltt}
+var x: int;
+    y: int;
+procedure p() =
+  var y: int;
+  procedure q() =
+    begin
+      x := x
+    end;
+  begin
+    if x = 0 then
+      x = 1;
+      y := 10;
+      call p()
+    else
+      y := 20;
+      call q()
+    end
+  end;
+begin // main program
+  x := 0;
+  y := 50;
+  call p()
+end
+\end{alltt}
+\rule{\columnwidth}{0.5pt}
+\caption{Example Program}\label{figure:exampleprog}
+\end{figure}
+
+During semantic analysis of the program procedure and variable static levels
+and variable offsets are determined.
+This information is used by the interpreter to store and load variables within
+the correct scope.
+
+
+\tikzstyle{staticLink}=[fill=blue!10!orange!10,draw=blue!30!black]
+\tikzstyle{dynamicLink}=[fill=yellow!20,draw=blue!30!black]
+
+\begin{figure}[H]
+\begin{tikzpicture}
+  \drawstruct{(0,8)}
+  \llstructcell{0.5}{freecell}{~} \coordinate (mainHead) at (currentcell.east);
+  \structcell[staticLink]{staticLink}
+  \structcell[dynamicLink]{dynamicLink}
+  \structcell[freecell]{staticLevel = 0}
+  \structcell[freecell]{proc = \texttt{<main>}}
+  \structcell[freecell]{x = 0}
+  \structcell[freecell]{y = 50}
   \structname{
     \begin{tabular}{c}
-      A's vtable
+      \texttt{<main>}
     \end{tabular}
   }
 
-  \draw[->] (Atm) -- (A);
+  \drawstruct{(0,0)}
+  \llstructcell{0.5}{freecell}{~} \coordinate (p2Head) at (currentcell.west);
+  \structcell[staticLink]{staticLink} \coordinate (p2sl) at (currentcell.west);
+  \structcell[dynamicLink]{dynamicLink} \coordinate (p2dl) at (currentcell.east);
+  \structcell[freecell]{staticLevel = 1}
+  \structcell[freecell]{proc = \texttt{p}}
+  \structcell[freecell]{y = 20}
+  \structname{
+    \begin{tabular}{c}
+      \texttt{p}
+    \end{tabular}
+  }
+
+  \drawstruct{(4,8)}
+  \llstructcell{0.5}{freecell}{~} \coordinate (p1Head) at (currentcell.west);
+  \structcell[staticLink]{staticLink} \coordinate (p1sl) at (currentcell.west);
+  \structcell[dynamicLink]{dynamicLink}  \coordinate (p1dl) at (currentcell.west);
+  \structcell[freecell]{staticLevel = 1}
+  \structcell[freecell]{proc = \texttt{p}}
+  \structcell[freecell]{y = 10}
+  \structname{
+    \begin{tabular}{c}
+      \texttt{p}
+    \end{tabular}
+  }
+
+  \drawstruct{(4,0)}
+  \llstructcell{0.5}{freecell}{~} \coordinate (qHead);
+  \structcell[staticLink]{staticLink} \coordinate (qsl) at (currentcell.west);
+  \structcell[dynamicLink]{dynamicLink} \coordinate (qdl) at (currentcell.west);
+  \structcell[freecell]{staticLevel = 2}
+  \structcell[freecell]{proc = \texttt{q}}
+  \structname{
+    \begin{tabular}{c}
+      \texttt{q}
+    \end{tabular}
+  }
+
+  \draw[->] (p1sl) to [out=150,in=30] (mainHead);
+  \draw[->] (p1dl) to [out=150,in=30] (mainHead);
+  \draw[->] (p2sl) to [out=150] (mainHead);
+  \draw[->] (p2dl) to [out=70] (p1Head);
+  \draw[->] (qsl) to [out=150,in=30] (p2Head);
+  \draw[->] (qdl) to [out=150,in=30] (p2Head);
 \end{tikzpicture}
+\caption{Frames of Example Program}\label{figure:frames}
+\end{figure}
 
 \end{document}
