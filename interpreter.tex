@@ -108,7 +108,44 @@ public void visitWriteNode(StatementNode
 \caption{Executing a \texttt{WriteNode}}\label{figure:writenode}
 \end{figure}
 
-\section{Interpreter Frame}\label{section:frame}
+\section{Interpreter Frames}\label{section:frame}
+
+If recursion was not allowed in the language,
+each procedure could maintain its set of variables.
+However PL0, like all modern languages, supports recursion
+and hence there can be multiple activations of the same procedure
+each with its own instance of the procedure's variables.
+To support multiple activations of procedures in PL0 
+one can use a stack of \emph{frames}.
+Each time a procedure is called 
+(including the initial call of the main program)
+a new (stack) frame for that procedure is pushed onto the stack.
+In the compiler a (stack) frame of an activation of a procedure \textsf{p} 
+is represented by an object that contains 
+\begin{itemize}
+\item
+a link to \textsf{p}'s parent's frame 
+(called a \emph{dynamic link} or \emph{control link})
+\item
+a static link (described below)
+and 
+\item
+an array containing the values of the variables for tthis activation of \textsf{p}.
+\end{itemize}
+
+In PL0 procedures may be nested inside other procedures to an arbitrary depth.
+An inner procedure can access its own local variables
+as well as the variables of all the procedures in which it is nested 
+(including the main program).
+To implement this in the interpreter, the activation frame of a procedure \textsf{q}
+is linked to the frame of the most recent activation of the procedure (or main program)
+in which it is directly included, say \textsf{p}, and then the activation frame 
+for \textsf{p} is linked to the most recent activation of the procedure in 
+which it is directly included, and so on, all the way up to the main program
+at the outermost level. 
+
+In PL0 there is only one frame instance for the main program:
+the very first frame created when the program starts execution.
 
 Fig. \ref{figure:exampleprog} is an example PL0 program, it has no functional
 purpose, it is used to demonstrate how frames are implemented within the PL0
@@ -117,7 +154,7 @@ procedure q.
 
 \begin{figure}[H]
 \rule{\columnwidth}{0.5pt}
-\begin{alltt}
+\begin{alltt}\sf
 var x: int;
     y: int;
 procedure p() =
@@ -156,7 +193,7 @@ local variables in an array of \texttt{Integer}s. A \texttt{Frame} also stores
 a static link and a dynamic link.
 
 \begin{description}
-\item[a static link] (also called an \emph{access link}) links to the closet
+\item[a static link] (also called an \emph{access link}) links to the closest
 frame which is one static level above the current frame. The static link
 is used to resolve non-local variables.
 
