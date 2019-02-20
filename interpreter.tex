@@ -147,41 +147,6 @@ at the outermost level.
 In PL0 there is only one frame instance for the main program:
 the very first frame created when the program starts execution.
 
-Fig. \ref{figure:exampleprog} is an example PL0 program, it has no functional
-purpose, it is used to demonstrate how frames are implemented within the PL0
-interpreter. It defines a procedure p which calls itself and then calls the
-procedure q.
-
-\begin{figure}[H]
-\rule{\columnwidth}{0.5pt}
-\begin{alltt}\sf
-var x: int;
-    y: int;
-procedure p() =
-  var y: int;
-  procedure q() =
-    begin
-      x := x
-    end;
-  begin
-    if x = 0 then
-      x = 1;
-      y := 10;
-      call p()
-    else
-      y := 20;
-      call q()
-    end
-  end;
-begin // main program
-  x := 0;
-  y := 50;
-  call p()
-end
-\end{alltt}
-\rule{\columnwidth}{0.5pt}
-\caption{Example Program}\label{figure:exampleprog}
-\end{figure}
 
 During semantic analysis of the program, procedure and variable static levels
 and variable offsets are determined.
@@ -221,72 +186,122 @@ to assign a value in the frames array of \texttt{Integer}s.
 \subsection{Looking Up Variables}\label{section:lookup}
 When looking up a variable the static level of the variable is used to lookup
 the frame where the variable should be stored. The offset of the variable is
-used to index the array of \texttt{Integer}s stored in the frame.
+used to index the array of \texttt{Integer}s stored in the frame.\\
+
+Fig. \ref{figure:variablelookup} provides a snippet of code which performs
+variable lookup.\\\\\\
+
+\begin{figure}
+\begin{java}
+public Integer visitVariableNode(ExpNode
+        .VariableNode node) {
+      beginExec("Variable");
+      /* Resolve the frame */
+      int level = node
+              .getVariable().getLevel();
+      Frame frame = currentFrame
+              .lookupFrame(level);
+      /* Get value from the frame */
+      int offset = node
+              .getVariable().getOffset();
+      Integer result = frame
+              .lookup(offset);
+      if (result == null) {
+          runtime("ref before assign",
+                  node.getLocation(),
+                  currentFrame);
+          return -1; // Never reached
+      }
+      endExec("Variable");
+      return result;
+  }
+\end{java}
+\caption{Performing Variable Lookup}\label{figure:variablelookup}
+\end{figure}
+
+\begin{figure}
+\rule{\columnwidth}{0.5pt}
+\begin{alltt}\sf
+var x: int;
+    y: int;
+procedure p() =
+  var y: int;
+  procedure q() =
+    begin
+      x := x
+    end;
+  begin
+    if x = 0 then
+      x = 1;
+      y := 10;
+      call p()
+    else
+      y := 20;
+      call q()
+    end
+  end;
+begin // main program
+  x := 0;
+  y := 50;
+  call p()
+end
+\end{alltt}
+\rule{\columnwidth}{0.5pt}
+\caption{Example Program}\label{figure:exampleprog}
+\end{figure}
+
+Fig. \ref{figure:exampleprog} is an example PL0 program used to demonstrate
+how frames are implemented within the PL0 interpreter. It defines a procedure
+p which calls itself and then calls the procedure q.\\
 
 \tikzstyle{staticLink}=[fill=blue!10!orange!10,draw=blue!30!black]
 \tikzstyle{dynamicLink}=[fill=yellow!20,draw=blue!30!black]
+\tikzstyle{pointer}=[fill=yellow!20,draw=white]
+\tikzstyle{padding}=[fill=white,draw=white]
 
-\begin{figure}[H]
+\begin{figure}
+\rule{\columnwidth}{0.5pt}
 \begin{tikzpicture}
-  \drawstruct{(0,8)}
-  \llstructcell{0.5}{freecell}{~} \coordinate (mainHead) at (currentcell.east);
+  \drawstruct{(0,0)}
+  \llstructcell{0.5}{padding}{\texttt{<main>}}
   \structcell[staticLink]{staticLink}
   \structcell[dynamicLink]{dynamicLink}
   \structcell[freecell]{level = 0}
   \structcell[freecell]{procedure = \texttt{<main>}}
   \structcell[freecell]{entries = [0, 50]}
-  \structname{
-    \begin{tabular}{c}
-      \texttt{<main>}
-    \end{tabular}
-  }
+  \structcell[pointer]{~} \coordinate (mainHead) at (currentcell.north);
 
-  \drawstruct{(0,0)}
-  \llstructcell{0.5}{freecell}{~} \coordinate (p2Head) at (currentcell.west);
+  \llstructcell{0.5}{padding}{\texttt{p}}
+  \structcell[staticLink]{staticLink} \coordinate (p1sl) at (currentcell.west);
+  \structcell[dynamicLink]{dynamicLink}  \coordinate (p1dl) at (currentcell.east);
+  \structcell[freecell]{level = 1}
+  \structcell[freecell]{procedure = \texttt{p}}
+  \structcell[freecell]{entries = [10]}
+  \structcell[pointer]{~} \coordinate (p1Head) at (currentcell.north);
+
+  \llstructcell{0.5}{padding}{\texttt{p}}
   \structcell[staticLink]{staticLink} \coordinate (p2sl) at (currentcell.west);
   \structcell[dynamicLink]{dynamicLink} \coordinate (p2dl) at (currentcell.east);
   \structcell[freecell]{level = 1}
   \structcell[freecell]{procedure = \texttt{p}}
   \structcell[freecell]{entries = [20]}
-  \structname{
-    \begin{tabular}{c}
-      \texttt{p}
-    \end{tabular}
-  }
+  \structcell[pointer]{~} \coordinate (p2Head) at (currentcell.north);
 
-  \drawstruct{(4,8)}
-  \llstructcell{0.5}{freecell}{~} \coordinate (p1Head) at (currentcell.west);
-  \structcell[staticLink]{staticLink} \coordinate (p1sl) at (currentcell.west);
-  \structcell[dynamicLink]{dynamicLink}  \coordinate (p1dl) at (currentcell.west);
-  \structcell[freecell]{level = 1}
-  \structcell[freecell]{procedure = \texttt{p}}
-  \structcell[freecell]{entries = [10]}
-  \structname{
-    \begin{tabular}{c}
-      \texttt{p}
-    \end{tabular}
-  }
-
-  \drawstruct{(4,0)}
-  \llstructcell{0.5}{freecell}{~} \coordinate (qHead);
+  \llstructcell{0.5}{padding}{\texttt{q}}
   \structcell[staticLink]{staticLink} \coordinate (qsl) at (currentcell.west);
-  \structcell[dynamicLink]{dynamicLink} \coordinate (qdl) at (currentcell.west);
+  \structcell[dynamicLink]{dynamicLink} \coordinate (qdl) at (currentcell.east);
   \structcell[freecell]{level = 2}
   \structcell[freecell]{procedure = \texttt{q}}
   \structcell[freecell]{entries = []}
-  \structname{
-    \begin{tabular}{c}
-      \texttt{q}
-    \end{tabular}
-  }
 
-  \draw[->] (p1sl) to [out=150,in=30] (mainHead);
-  \draw[->] (p1dl) to [out=150,in=30] (mainHead);
+  \draw[->] (p1sl) to [out=150] (mainHead);
+  \draw[->] (p1dl) to [in=70] (mainHead);
   \draw[->] (p2sl) to [out=150] (mainHead);
-  \draw[->] (p2dl) to [out=70] (p1Head);
-  \draw[->] (qsl) to [out=150,in=30] (p2Head);
-  \draw[->] (qdl) to [out=150,in=30] (p2Head);
+  \draw[->] (p2dl) to [in=70] (p1Head);
+  \draw[->] (qsl) to [out=150] (p2Head);
+  \draw[->] (qdl) to [in=70] (p2Head);
 \end{tikzpicture}
+\rule{\columnwidth}{0.5pt}
 \caption{Frames of Example Program}\label{figure:frames}
 \end{figure}
 
