@@ -1,7 +1,7 @@
 \usepackage{color}
 \usepackage{listings}
 
-\newcommand{\Year}{2010}
+\newcommand{\Year}{2019}
 \newcommand{\Department}{School of Information Technology and Electrical Engineering}
 \newcommand{\Building}{General Purpose South}
 \newcommand{\SubjectCode}{COMP4403/7402}
@@ -38,11 +38,48 @@
 \definecolor{mauve}{rgb}{0.58,0,0.82}
 
 \lstset{
-  keywordstyle=\color{blue},
-  commentstyle=\color{dkgreen},
-  stringstyle=\color{mauve},
-  frame=single,
-  backgroundcolor=\color{code},
+         numberbychapter=false,
+         language=Java,
+         basicstyle=\small\sffamily, % Standardschrift
+         numberstyle=\tiny,          % Stil der Zeilennummern
+         numbersep=5pt,              % Abstand der Nummern zum Text
+         tabsize=2,                  % Groesse von Tabs
+         extendedchars=true,         %
+         breaklines=true,            % Zeilen werden Umgebrochen
+         keywordstyle=\color{blue}\textbf,
+         commentstyle=\color{darkgreen}\textit,
+         frame=bt,
+         backgroundcolor=\color{white},
+         fillcolor=\color{white},
+         stringstyle=\color{black}\sffamily, % Farbe der String
+         showspaces=false,           % Leerzeichen anzeigen ?
+         showtabs=false,             % Tabs anzeigen ?
+         xleftmargin=0pt,
+         xrightmargin=0pt,
+         framexleftmargin=0pt,
+         framexrightmargin=0pt,
+         framexbottommargin=4pt,
+         morekeywords={capability},
+         morekeywords={@capability},
+         abovecaptionskip=\smallskipamount,
+         belowcaptionskip=\smallskipamount,
+         showstringspaces=false,      % Leerzeichen in Strings anzeigen ?
+  %keywordstyle=\color{blue},
+  %commentstyle=\color{dkgreen},
+  %stringstyle=\color{mauve},
+  %frame=single,
+  %backgroundcolor=\color{code},
   escapeinside={<@}{@>},
-  basicstyle=\ttfamily\small
+  %basicstyle=\ttfamily\small
 }
+\lstloadlanguages{Java}
+
+\usepackage{calc}
+\usepackage{caption}
+\DeclareCaptionFont{white}{\color{white}}
+\DeclareCaptionFont{yellow}{\color{yellow}}
+%\DeclareCaptionFormat{listing}{\colorbox[cmyk]{0.43, 0.35, 0.35,0.01}{\parbox{\linewidth}{\hspace{5pt}#1#2#3}}}
+\DeclareCaptionFormat{listing}{\colorbox[cmyk]{0.43, 0.35, 0.35,0.01}{\parbox{\linewidth - 2\fboxsep}{\hspace{5pt}#1#2#3}}}
+\captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white,justification=centering,
+        singlelinecheck=false, margin=0pt, font={bf}}
+\definecolor{darkgreen}{cmyk}{1,0,1,0.25}

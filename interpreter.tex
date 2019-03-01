@@ -1,4 +1,5 @@
-\documentclass[a4paper,twoside,twocolumn]{article}
+\documentclass[a4paper,twoside]{article}
+%\documentclass[a4paper,twoside,twocolumn]{article}
 
 \usepackage{times}
 \usepackage{color}
@@ -10,6 +11,7 @@
 
 \usepackage{a4med}
 \usepackage{comp-tut}
+\usepackage{PL0-notes}
 
 \renewcommand{\textfraction}{0.0}
 \renewcommand{\floatpagefraction}{1.0}
@@ -20,7 +22,7 @@
 \setcounter{dbltopnumber}{3}
 \setcounter{totalnumber}{3}
 
-\newcommand{\figurerule}{\rule{\textwidth}{0.5pt}}
+\renewcommand{\figurerule}{\rule{\textwidth}{0.5pt}}
 \newcommand{\OPN}[1]{\textbf{#1}}
 %\newcommand{\OP}[2]{\item[#1]}
 \newcommand{\OP}[2]{\item[#1]}% (#2)}
@@ -32,281 +34,426 @@
 \begin{document}
 
 \thispagestyle{empty}
-\title{\vspace*{-3cm}Interpreter}
+\title{\vspace*{-3cm}PL0 Interpreter}
 \author{Brae Webb}
 \maketitle
 \pagestyle{myheadings}
 \markboth{PL0 Interpreter (\today)}{Brae Webb (\today)}
 \vspace*{-4ex}
 
-An interpreter is a type of program, similar to a compiler, which builds an
-abstract syntax tree from input source code. An interpreter differs from a
-compiler in that it does not generate machine code. Instead it will evaluate
-the expression nodes and execute the statement nodes in an abstract syntax tree
-directly in order to run the input program.
 
-
+An interpreter is similar to a compiler in that it builds an abstract syntax tree from input source code,
+but it differs from a compiler in that it does not generate machine code. 
+Instead it evaluates the expression nodes and 
+executes the statement nodes in an abstract syntax tree directly in order to run the given program.
+%
 The PL0 Abstract Syntax Tree (AST) is comprised of expression nodes
-(\texttt{ExpNode}) and statement nodes (\texttt{StatementNode}). The PL0
+(\Progtext{ExpNode}) and statement nodes (\Progtext{StatementNode}). The PL0
 Interpreter uses a visitor pattern to visit each of the statement and expression
 nodes.
 
 \section{Evaluating Expression Nodes}\label{section:expressions}
-When an expression node is visited it is evaluated into an \texttt{Integer}.
-Expression nodes consist of atomic and composite nodes. Atomic nodes retrieve
-their values from variable lookup or user input, examples are the 
-\texttt{VariableNode} and \texttt{ReadNode}. Composite nodes are derived from
-other composite nodes or atomic nodes, examples are the \texttt{OperatorNode}
-and \texttt{DereferenceNode}.
+When an expression node is visited it is evaluated to give a value of abstract type \Progtext{Value},
+which has concrete subtypes for integer values (\Progtext{IntegerValue}) and address values (\Progtext{AddressValue}).
+Expression nodes consist of atomic and composite nodes. 
+Example atomic nodes are 
+those containing the value of a constant (\Progtext{ConstNode})
+and
+nodes handling user input (\Progtext{ReadNode}).
+%or 
+%nodes that determine the address of a variable (\Progtext{VariableNode}).
+Composite nodes are derived from
+other composite nodes or atomic nodes, examples are the \Progtext{BinaryNode},
+\Progtext{UnaryNode}
+and \Progtext{DereferenceNode}.
+Listing~\ref{visitConstNode} gives the interpreter evaluator method for a \Progtext{ConstNode};
+it just returns the value of the constant stored in the node, 
+wrapped using the constructor \Progtext{IntegerValue},
+so that the result is of type \Progtext{Value}.
+Listing~\ref{visitReadNode} gives the evaluator for a \Progtext{ReadNode}
+that reads an integer value from standard input and returns the integer
+wrapped using the \Progtext{IntegerValue} constructor,
+so that the result is of type \Progtext{Value}.
+If the input is not a valid integer, a runtime error is triggered.
 
-%An expression node is visited by calling the 
-%\emph{.evaluate(ExpTransform$\langle$Integer$\rangle$)} method of the node.
-
-\begin{figure}[H]
-\begin{java}
-public Integer visitReadNode(ExpNode
-        .ReadNode node) {
-    beginExec("Read");
-    /* Read next int from input stream */
-    int result;
-    try {
-        result = Integer
-                .parseInt(in.readLine());
-    } catch (Exception e) {
-        runtime("read value not int",
-                node.getLocation(),
-                currentFrame);
-        return -1; // Never reached
+\begin{figure*}[h]
+\begin{lstlisting}[caption=Evaluating a ConstNode,label=visitConstNode]
+    /**
+     * Expression evaluation for a constant - resolve to the constant's value
+     */
+    public IntegerValue visitConstNode(ExpNode.ConstNode node) {
+        beginExec("ConstNode");
+        IntegerValue result = new IntegerValue(node.getValue());
+        endExec("ConstNode");
+        return result;
     }
-    endExec("Read");
-    return result;
-}
-\end{java}
-\caption{Evaluating a \texttt{ReadNode}}\label{figure:readnode}
-\end{figure}
+\end{lstlisting}
+\end{figure*}
+
+\begin{figure*}[ht]
+\begin{lstlisting}[caption=Evaluating a ReadNode,label=visitReadNode]
+    /**
+     * Expression evaluation for a read expression - read an int from stdin
+     */
+    public IntegerValue visitReadNode(ExpNode.ReadNode node) {
+        beginExec("Read");
+        /* Read next int from standard input */
+        IntegerValue result;
+        try {
+            result = new IntegerValue(Integer.parseInt(in.readLine()));
+        } catch (Exception e) {
+            runtime("invalid value read - must be an integer",
+                    node.getLocation(), currentFrame);
+            return null; // Never reached
+        }
+        endExec("Read");
+        return result;
+    }
+\end{lstlisting}
+%\caption{Evaluating a \Progtext{ReadNode}}\label{figure:readnode}
+\end{figure*}
+
 
 \section{Executing Statement Nodes}\label{section:statements}
-When a statement node is visited it executes Java code that simulates the
-behaviour of the node it represents in PL0. For example, a \texttt{WriteNode}
-will evaluate its \texttt{ExpNode} and print the result to the output.
 
-\begin{figure}[H]
-\begin{java}
-public void visitWriteNode(StatementNode
-        .WriteNode node) {
-    beginExec("Write");
-    /* Evaluate the code in the
-     * write expression */
-    int result = node.getExp()
-            .evaluate(this);
-    /* Print the result to the 
-     * output stream */
-    outStream.println(result);
-    endExec("Write");
-}
-\end{java}
-\caption{Executing a \texttt{WriteNode}}\label{figure:writenode}
-\end{figure}
+When a statement node is visited, its visit method simulates the behaviour of the PL0 statement the node represents. 
+For example, a \Progtext{WriteNode} evaluates its expression to give an integer value 
+and prints the result to standard output
+-- see Listing~\ref{visitWriteNode}.
+The evaluation of the expression returns a reference of static type \Progtext{Value}
+but we know its dynamic type must be an \Progtext{IntegerValue}
+because the expression in a write statement must be of type \Progtext{int}.
+The method \Progtext{getInteger} is used to extract the integer from the \Progtext{IntegerValue}.
 
-\section{Interpreter Frames}\label{section:frame}
+
+\begin{figure*}[ht]
+\begin{lstlisting}[caption=Interpreting a WriteNode, label=visitWriteNode]
+    /**
+     * Execute code for a write statement
+     */
+    public void visitWriteNode(StatementNode.WriteNode node) {
+        beginExec("Write");
+        /* Evaluate the write expression */
+        int result = node.getExp().evaluate(this).getInteger();
+        /* Print the result to the outStream */
+        outStream.println(result);
+        endExec("Write");
+    }
+\end{lstlisting}
+%\caption{Executing a \Progtext{WriteNode}}\label{figure:writenode}
+\end{figure*}
+
+
+\section{Interpreter Stack Frames}\label{section:frame}
 
 If recursion was not allowed in the language,
-each procedure could maintain its set of variables.
+each procedure could maintain a single set of variables.
 However PL0, like all modern languages, supports recursion
-and hence there can be multiple activations of the same procedure
+and hence there can be multiple activations of the same procedure,
 each with its own instance of the procedure's variables.
-To support multiple activations of procedures in PL0 
-one can use a stack of \emph{frames}.
+To support multiple activations of procedures in PL0,
+one can use a stack of \emph{frames}
+(also known as \emph{activation records}).
 Each time a procedure is called 
-(including the initial call of the main program)
-a new (stack) frame for that procedure is pushed onto the stack.
-In the compiler a (stack) frame of an activation of a procedure \textsf{p} 
-is represented by an object that contains 
+a new frame for that procedure is pushed onto the stack.
+%\pagebreak[3]
+A frame for an activation of a procedure \Progtext{p} 
+is represented by an object that contains,
 \begin{itemize}
 \item
-a link to \textsf{p}'s parent's frame 
-(called a \emph{dynamic link} or \emph{control link})
+a link to the frame of the procedure activation that called \Progtext{p},
+called a \emph{dynamic link} (or \emph{control link}),
 \item
-a static link (described below)
+a static link (or \emph{access link}) described  in detail below,
 and 
 \item
-an array containing the values of the variables for tthis activation of \textsf{p}.
+an array containing the values of the variables for this activation of \Progtext{p}.
 \end{itemize}
-
-In PL0 procedures may be nested inside other procedures to an arbitrary depth.
-An inner procedure can access its own local variables
-as well as the variables of all the procedures in which it is nested 
-(including the main program).
-To implement this in the interpreter, the activation frame of a procedure \textsf{q}
-is linked to the frame of the most recent activation of the procedure (or main program)
-in which it is directly included, say \textsf{p}, and then the activation frame 
-for \textsf{p} is linked to the most recent activation of the procedure in 
-which it is directly included, and so on, all the way up to the main program
-at the outermost level. 
-
-In PL0 there is only one frame instance for the main program:
-the very first frame created when the program starts execution.
-
-
-During semantic analysis of the program, procedure and variable static levels
-and variable offsets are determined.
-This information is used by the interpreter to store and load variables within
-the correct scope.
-
-Each call to a procedure creates a new \texttt{Frame} which stores the procedures
-local variables in an array of \texttt{Integer}s. A \texttt{Frame} also stores
-a static link and a dynamic link.
-
-\begin{description}
-\item[a static link] (also called an \emph{access link}) links to the closest
-frame which is one static level above the current frame. The static link
-is used to resolve non-local variables.
-
-\item[a dynamic link] (also called a \emph{control link}) links to the frame
-of the calling procedure. The dynamic link is used to return to the previous
-frame when a procedure returns.
-\end{description}
-
-\subsection{Frame Lookup}\label{section:lookup}
-The static levels of procedures and variables as determined by the semantic
-analysis are used to lookup frames. A frame is looked up by a static level,
-the static links are followed until a frame with a matching static level is
-found.
-
-\subsection{Calling a Procedure}\label{section:call}
-When a procedure is called a new frame is entered. The static level of the
-procedure being called is used to lookup the frame which will be used for the
-static link. The current frame is used as the dynamic link of the new frame.
-
-\subsection{Assigning Variables}\label{section:assignment}
-When assigning a variable the static level of the variable is used to lookup
-the frame to store the variable within. The offset of the variable is used
-to assign a value in the frames array of \texttt{Integer}s.
-
-\subsection{Looking Up Variables}\label{section:lookup}
-When looking up a variable the static level of the variable is used to lookup
-the frame where the variable should be stored. The offset of the variable is
-used to index the array of \texttt{Integer}s stored in the frame.\\
-
-Fig. \ref{figure:variablelookup} provides a snippet of code which performs
-variable lookup.\\\\\\
-
-\begin{figure}
-\begin{java}
-public Integer visitVariableNode(ExpNode
-        .VariableNode node) {
-      beginExec("Variable");
-      /* Resolve the frame */
-      int level = node
-              .getVariable().getLevel();
-      Frame frame = currentFrame
-              .lookupFrame(level);
-      /* Get value from the frame */
-      int offset = node
-              .getVariable().getOffset();
-      Integer result = frame
-              .lookup(offset);
-      if (result == null) {
-          runtime("ref before assign",
-                  node.getLocation(),
-                  currentFrame);
-          return -1; // Never reached
-      }
-      endExec("Variable");
-      return result;
-  }
-\end{java}
-\caption{Performing Variable Lookup}\label{figure:variablelookup}
-\end{figure}
-
-\begin{figure}
+For the purposes of this discussion the main program acts like a procedure.
+The first frame set up by the interpreter is for the main program and 
+each time a procedure is called a new frame for that procedure is pushed onto the stack.
+%
+\begin{figure}[ht]
+\begin{minipage}{0.5\textwidth}
 \rule{\columnwidth}{0.5pt}
 \begin{alltt}\sf
-var x: int;
-    y: int;
+\Comment{main program variables}
+var x: int;   \Comment{At level 1 (main program) and offset 0}
+      y: int;   \Comment{At level 1 (main program) and offset 1}
+      
 procedure p() =
-  var y: int;
-  procedure q() =
-    begin
-      x := x
-    end;
-  begin
-    if x = 0 then
-      x = 1;
-      y := 10;
-      call p()
-    else
-      y := 20;
-      call q()
-    end
-  end;
-begin // main program
-  x := 0;
-  y := 50;
-  call p()
+    \Comment{local variable to p}
+    var y: int;   \Comment{At level 2 (p) and offset 0}
+  
+    procedure q() =
+        \Comment{local variable to q}
+        var z: int;  \Comment{At level 3 (q) and offset 0}
+        begin z := y; x := z end;
+  
+    begin \Comment{p}
+        if x = 0 then
+            begin x := 1; y := 10; call p() end
+        else
+            begin y := 20; call q() end
+    end; \Comment{p}
+    
+begin \Comment{main program}
+    x := 0; y := 50; 
+    call p();
+    write x; write y \Comment{outputs 20 and 50}
 end
 \end{alltt}
 \rule{\columnwidth}{0.5pt}
-\caption{Example Program}\label{figure:exampleprog}
-\end{figure}
-
-Fig. \ref{figure:exampleprog} is an example PL0 program used to demonstrate
-how frames are implemented within the PL0 interpreter. It defines a procedure
-p which calls itself and then calls the procedure q.\\
-
-\tikzstyle{staticLink}=[fill=blue!10!orange!10,draw=blue!30!black]
-\tikzstyle{dynamicLink}=[fill=yellow!20,draw=blue!30!black]
-\tikzstyle{pointer}=[fill=yellow!20,draw=white]
-\tikzstyle{padding}=[fill=white,draw=white]
-
-\begin{figure}
-\rule{\columnwidth}{0.5pt}
+\end{minipage}%
+\tikzstyle{staticLink}=[fill=blue!10!orange!10,draw=blue!30!black]%
+\tikzstyle{dynamicLink}=[fill=yellow!20,draw=blue!30!black]%
+\tikzstyle{pointer}=[fill=yellow!20,draw=white]%
+\tikzstyle{padding}=[fill=white,draw=white]%
+\begin{minipage}{0.5\textwidth}
+%\rule{\columnwidth}{0.5pt}
 \begin{tikzpicture}
-  \drawstruct{(0,0)}
-  \llstructcell{0.5}{padding}{\texttt{<main>}}
-  \structcell[staticLink]{staticLink}
-  \structcell[dynamicLink]{dynamicLink}
-  \structcell[freecell]{level = 0}
-  \structcell[freecell]{procedure = \texttt{<main>}}
-  \structcell[freecell]{entries = [0, 50]}
-  \structcell[pointer]{~} \coordinate (mainHead) at (currentcell.north);
+%  \drawstruct{(0,0)}
+  \startframe
+%  \llcell{0.5}{padding}{\Progtext{main}}
+  \cell[staticLink]{Static Link = null} \coordinate (mainL) at (currentcell.west); \coordinate (mainR) at (currentcell.east);
+  \cell[dynamicLink]{Dynamic Link = null}
+  \cell[freecell]{level = 1}
+%  \cell[freecell]{procedure = \Progtext{main}}
+  \cell[freecell]{entries = [20, 50]}
+  \finishframe{\Progtext{main}}
+  \llcell{1}{padding}{~} \coordinate (mainHead) at (currentcell.north);
 
-  \llstructcell{0.5}{padding}{\texttt{p}}
-  \structcell[staticLink]{staticLink} \coordinate (p1sl) at (currentcell.west);
-  \structcell[dynamicLink]{dynamicLink}  \coordinate (p1dl) at (currentcell.east);
-  \structcell[freecell]{level = 1}
-  \structcell[freecell]{procedure = \texttt{p}}
-  \structcell[freecell]{entries = [10]}
-  \structcell[pointer]{~} \coordinate (p1Head) at (currentcell.north);
+  \startframe
+%  \llcell{0.5}{padding}{\Progtext{p}} \coordinate (p1L) at (currentcell.west);
+  \cell[staticLink]{Static Link} \coordinate (p1sl) at (currentcell.west); \coordinate (p1R) at (currentcell.east);
+  \cell[dynamicLink]{Dynamic Link}  \coordinate (p1dl) at (currentcell.east);
+  \cell[freecell]{level = 2}
+%  \cell[freecell]{procedure = \Progtext{p}}
+  \cell[freecell]{entries = [10]}
+  \finishframe{\Progtext{p}}
+  \cell[padding]{~} \coordinate (p1Head) at (currentcell.north);
 
-  \llstructcell{0.5}{padding}{\texttt{p}}
-  \structcell[staticLink]{staticLink} \coordinate (p2sl) at (currentcell.west);
-  \structcell[dynamicLink]{dynamicLink} \coordinate (p2dl) at (currentcell.east);
-  \structcell[freecell]{level = 1}
-  \structcell[freecell]{procedure = \texttt{p}}
-  \structcell[freecell]{entries = [20]}
-  \structcell[pointer]{~} \coordinate (p2Head) at (currentcell.north);
+  \startframe
+%  \llcell{0.5}{padding}{\Progtext{p}} \coordinate (p2L) at (currentcell.west);
+  \cell[staticLink]{Static Link} \coordinate (p2sl) at (currentcell.west); \coordinate (p2R) at (currentcell.east);
+  \cell[dynamicLink]{Dynamic Link} \coordinate (p2dl) at (currentcell.east);
+  \cell[freecell]{level = 2}
+%  \cell[freecell]{procedure = \Progtext{p}}
+  \cell[freecell]{entries = [20]}
+  \finishframe{\Progtext{p}}
+  \cell[padding]{~} \coordinate (p2Head) at (currentcell.north);
 
-  \llstructcell{0.5}{padding}{\texttt{q}}
-  \structcell[staticLink]{staticLink} \coordinate (qsl) at (currentcell.west);
-  \structcell[dynamicLink]{dynamicLink} \coordinate (qdl) at (currentcell.east);
-  \structcell[freecell]{level = 2}
-  \structcell[freecell]{procedure = \texttt{q}}
-  \structcell[freecell]{entries = []}
+  \startframe
+%  \llcell{0.5}{padding}{\Progtext{q}}
+  \cell[staticLink]{Static Link} \coordinate (qsl) at (currentcell.west);
+  \cell[dynamicLink]{Dynamic Link} \coordinate (qdl) at (currentcell.east);
+  \cell[freecell]{level = 3}
+%  \cell[freecell]{procedure = \Progtext{q}}
+  \cell[freecell]{entries = [20]}
+  \finishframe{\Progtext{q}}
 
-  \draw[->] (p1sl) to [out=150] (mainHead);
-  \draw[->] (p1dl) to [in=70] (mainHead);
-  \draw[->] (p2sl) to [out=150] (mainHead);
-  \draw[->] (p2dl) to [in=70] (p1Head);
-  \draw[->] (qsl) to [out=150] (p2Head);
-  \draw[->] (qdl) to [in=70] (p2Head);
+  \draw[->, thick] (p1sl) to [out=180,in=180] (mainL);
+  \draw[->, thick] (p1dl) to [out=0,in=0] (mainR);
+  \draw[->, thick] (p2sl) to [out=180,in=180] (mainL);
+  \draw[->, thick] (p2dl) to [out=0,in=0] (p1R);
+  \draw[->, thick] (qsl) to [out=180,in=180] (p2sl);
+  \draw[->, thick] (qdl) to [out=0,in=0] (p2R);
 \end{tikzpicture}
-\rule{\columnwidth}{0.5pt}
-\caption{Frames of Example Program}\label{figure:frames}
+%\rule{\columnwidth}{0.5pt}
+\end{minipage}
+\caption{Example program and runtime stackat end of call to \Progtext{q}}\label{figure:exampleprog}
 \end{figure}
+Fig. \ref{figure:exampleprog} has a visual representation of the stack of
+\Progtext{Frame}s that are created when the example program in Fig.
+\ref{figure:exampleprog} is interpreted up to the end of the call of procedure \Progtext{q}.
+Note that the stack grows from the top of the page to the bottom,
+so that the logical top frame of the stack is at the bottom of the page.
 
-Fig. \ref{figure:frames} is a visual representation of the instances of
-\texttt{Frame} that are created when the example program in Fig.
-\ref{figure:exampleprog} is interpreted.
+
+In PL0, procedures may be nested inside other procedures to an arbitrary depth.
+An inner procedure can access its own local variables
+as well as the variables of all the procedures in which it is nested 
+(including the main program).
+For example, in the PL0 program in Fig.~\ref{figure:exampleprog},
+within the body of procedure \Progtext{q}, access is allowed to 
+the local variable \Progtext{z} declared within \Progtext{q},
+plus the variable \Progtext{y} declared within \Progtext{p},
+plus the variable \Progtext{x} declared within the main program.
+Note that within \Progtext{p} (and hence \Progtext{q}) the main program variable \Progtext{y}
+is masked by the variable \Progtext{y} declared within \Progtext{p}
+and hence there is no way to access the main program variable \Progtext{y}
+from within \Progtext{p} (and hence from within \Progtext{q}).
+Within the interpreter each variable is given an address
+that is pair consisting of its static level and offset.
+The variables declared in the main program are at level 1;
+those in \Progtext{p} at level 2;
+and
+those in \Progtext{q} at level 3.
+Within a procedure variables are given offsets starting from 0
+and incrementing by 1 for each additional variable.
+
+At runtime the interpreter keeps track of the frame for the currently executing procedure
+(the logical top of frame of the stack).
+That frame's variables can be directly accessed from the entries within the frame.
+To access non-local variables the static link of the frame is used to access the frames 
+of enclosing procedures.
+For example, if procedure \Progtext{q} in Fig.~\ref{figure:exampleprog} is executing
+the current frame is the frame for that activation of \Progtext{q}.
+The frame for \Progtext{q} has a static link to the frame for the most recent activation of \Progtext{p},
+and that frame has a static link to the frame for the main program 
+(there is only ever one frame for the main program).
+
+
+\subsection{Addressing variables}
+
+During static semantic analysis of the program, procedure and variable static levels
+and variable offsets are determined.
+This information is used by the interpreter to store and load variables within
+the correct frame with the correct offset.
+A \Progtext{VariableNode} represents the address of a variable 
+and hence when an instance of \Progtext{VariableNode} is evaluated
+it returns an \Progtext{AddressValue} consisting of the static level and offset of the variable it represents.
+Listing~\ref{visitVariableNode} gives the evaluator for a \Progtext{VariableNode},
+which extracts the static level and offset of a variable from its symbol table entry.
+
+\begin{figure*}[ht]
+\begin{lstlisting}[caption=Evaluating a VariableNode to an AddressValue, label=visitVariableNode]
+    /**
+     * Expression evaluation for a variable - resolve variable from the frame
+     */
+    public Value visitVariableNode(ExpNode.VariableNode node) {
+        beginExec("Variable");
+        SymEntry.VarEntry entry = node.getVariable();
+        /* Construct the variable's address from its static level and offset */
+        Value lValue = new AddressValue(entry.getLevel(), entry.getOffset());
+        endExec("Variable");
+        return lValue;
+    }
+\end{lstlisting}
+%\caption{Performing Variable Lookup}\label{figure:variablelookup}
+\end{figure*}
+
+
+\subsection{Accessing the value of a variable (left value)}\label{section:lookup}
+
+To access the value stored within a variable, a \Progtext{DereferenceNode} is used.
+Each \Progtext{DereferenceNode} has a reference to the left value expression (address) it is dereferencing.
+(Within the current interpreter the left value is always a \textsf{VariableNode}.)
+The evaluator for the \Progtext{DereferenceNode} is given in Listing~\ref{visitDereferenceNode}.
+\begin{figure*}[ht]
+\begin{lstlisting}[caption=Evaluating a DereferenceNode,label=visitDereferenceNode]
+    /**
+     * Expression evaluation for dereference - evaluate subexpression
+     */
+    public Value visitDereferenceNode(ExpNode.DereferenceNode node) {
+        beginExec("Dereference");
+        Value lValue = node.getLeftValue().evaluate(this);
+        /* Resolve the frame containing the variable node */
+        Frame frame = currentFrame.lookupFrame(lValue.getAddressLevel());
+        /* Retrieve the variables value from the frame */
+        Value result = frame.lookup(lValue.getAddressOffset());
+        if (result == null) {
+            runtime("variable accessed before assignment", node.getLocation(),
+                    currentFrame);
+            return null; // Never reached
+        }
+        endExec("Dereference");
+        return result;
+    }
+\end{lstlisting}
+\end{figure*}
+It first evaluates its left value expression. 
+That evaluation returns an \Progtext{AddressValue} consisting of a static level and offset.
+Next the frame containing that address is determined.
+If the current frame is at level $n$ and the level of the left value expression is $m$ 
+then, starting at the current frame, the static link chain is followed for $n-m$ times.
+For example, to access \Progtext{z}, which is local to procedure \Progtext{q} and hence at level 3,
+from within the body of \Progtext{q}, which is also at level 3, 
+$n=m=3$ and hence no links are followed and the current frame is used.
+To access \Progtext{x}, which is in the main program and hence is at level 1, 
+from within \Progtext{q}, $n=3$ and $m=1$, and hence we link twice up the chain of static links
+to get to the frame for the main program. 
+Once we have the frame containing the variable, 
+the offset is used to access the value of the variable within the entries of that frame.
+If the variable hasn't been assigned a value, its entry is null and 
+a runtime error is triggered.
+
+
+
+\subsection{Calling a Procedure}\label{section:call}
+
+When a procedure is called a new frame is constructed and that becomes the current frame. 
+The previous current frame is used as the dynamic link of the new frame.
+The static level of the procedure being called is used to lookup the frame 
+that is used for the static link of the new frame. 
+Once the new frame is set up, the body of the called procedure is executed.
+When that completes, the current frame is popped from the execution stack,
+restoring the previous current frame from the dynamic link.
+Listing~\ref{visitCallNode} gives the interpreter for calling a procedure.
+
+\begin{figure*}[ht]
+\begin{lstlisting}[caption=Interpreter for calling a procedure, label=visitCallNode]
+    /**
+     * Execute code for a call statement
+     */
+    public void visitCallNode(StatementNode.CallNode node) {
+        beginExec("Call");
+        /* Decent to the executing procedures frame */
+        currentFrame = currentFrame.enterFrame(node.getEntry());
+        /* Resolve the code block to call and execute the block */
+        node.getEntry().getBlock().accept(this);
+        /* Return to the parent frame */
+        currentFrame = currentFrame.exitFrame();
+        endExec("Call");
+    }
+\end{lstlisting}
+
+\end{figure*}
+
+
+\subsection{Assigning Variables}\label{section:assignment}
+
+An \Progtext{AssignmentNode} has a left value expression, 
+which evaluates to an address (\Progtext{AddressValue}),
+and a right side expression, 
+which evaluates to a value of the type of the variable being assigned.
+The static level of the left value address is used to determine the frame containing the variable
+as described for access a variable.
+The value of the right side expression is then stored in the entries of that frame at the offset
+given by the left value address.
+Listing~\ref{visitAssignmentNode} gives the interpreter for an assignment statement.
+
+\begin{figure*}[ht]
+\begin{lstlisting}[caption=Interpreter for an assignment statement, label=visitAssignmentNode]
+    /**
+     * Lookup the closest frame with the same static level as the variable
+     * and assign the value to the variables offset within that frame.
+     *
+     * @param lValue  The address of the variable to assign the value to.
+     * @param value The value to assign.
+     */
+    private void assignValue(Value lValue, Value value) {
+        /* Resolve the frame containing the variable node */
+        Frame frame = currentFrame.lookupFrame(lValue.getAddressLevel());
+        /* Assign the variables value to the offset in the frame */
+        frame.assign(lValue.getAddressOffset(), value);
+    }
+    
+    /**
+     * Execute code for an assignment statement
+     */
+    public void visitAssignmentNode(StatementNode.AssignmentNode node) {
+        beginExec("Assignment");
+        /* Evaluate the code to be assigned */
+        Value value = node.getExp().evaluate(this);
+        /* Assign the value to the variables offset */
+        Value lValue = node.getVariable().evaluate(this);
+        assignValue(lValue, value);
+        endExec("Assignment");
+    }    
+\end{lstlisting}
+
+\end{figure*}
+
 
 \end{document}

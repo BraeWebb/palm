@@ -1,0 +1,192 @@
+\newcounter{examplecount}
+\setcounter{examplecount}{0}
+\renewcommand{\theexamplecount}{\arabic{examplecount}}
+\newcommand{\@ExampleDef}[1]{
+        \par\textbf{Example \refstepcounter{examplecount}\label{example:#1}
+	\theexamplecount. }}
+\ifdefined\Example
+  \renewenvironment{Example}[1]{\@ExampleDef#1}{\hfill$\Box$}
+\else
+  \newenvironment{Example}[1]{\@ExampleDef#1}{\hfill$\Box$}
+\fi
+        
+\newcounter{Exercise}%[chapter]
+\newenvironment{Exercise}{\refstepcounter{Exercise}%\label{exercise:#1}
+        \noindent\par\textbf{Exercise \theExercise.}}{\hfill$\Box$}
+%        \paragraph{Exercise \theExercise.}}{}%{\hfill$\Box$}
+%        \paragraph{Exercise \thechapter.\theexercise}}
+
+\newcounter{Solution}%[chapter]
+\newenvironment{Solution}{\refstepcounter{Solution}
+        \paragraph{Solution \theSolution.}}{}%{\hfill$\Box$}
+%        \paragraph{Solution \thechapter.\thesolution}}
+
+\newcommand{\figurerule}{\rule{\textwidth}{0.8pt}}
+\newcommand{\figurerulecolumn}{\rule{0.5\textwidth}{0.8pt}}
+\newcommand{\columnrule}{\rule{\columnwidth}{0.5pt}}
+
+% rule macros
+\makeatletter
+\newsavebox{\RuleSave}
+\def\Rule{\@ifnextchar[{\@@Rule}{\@Rule}}
+\newcommand{\@Rule}[2]{\sbox{\RuleSave}{\(\begin{array}[b]{c}
+\ifx\@empty#1\else#1 \\\hline\fi #2
+\end{array}\)}\mbox{\usebox{\RuleSave}}}
+\def\@@Rule[#1]#2#3{\sbox{\RuleSave}{\(\begin{array}[b]{c}
+\ifx\@empty#2\else#2 \\\hrulefill{}_{#1}\\\fi #3
+\end{array}\)}\mbox{\usebox{\RuleSave}}}
+%\newcommand{\RuleEquiv}[2]{\sbox{\RuleSave}{\(\begin{array}{l}~~\begin{array}{l}#1\end{array}\\\mbox{is equivalent to}\\~~\begin{array}{l}#2\end{array}\end{array}\)}\mbox{\usebox{\RuleSave}}}
+%\newcommand{\RuleThen}[2]{\sbox{\RuleSave}{\(\begin{array}{l}\mbox{If}\\~~\begin{array}[t]{l}#1\end{array}\\\mbox{then}\\~~\begin{array}[t]{l}#2\end{array}\end{array}\)}\fbox{\usebox{\RuleSave}}}
+\makeatother
+\newcounter{rulecount}[section]
+\setcounter{rulecount}{0}
+\renewcommand{\therulecount}{\thesection.\arabic{rulecount}}
+\newcommand{\RuleLabel}[1]{\refstepcounter{rulecount}\textsf{Rule \therulecount\ #1}\label{rule:#1}}
+\newcommand{\RefRule}[1]{\textsf{\small Rule~\ref{rule:#1} (#1)}}
+\newcommand{\RefRuleNum}[1]{\textsf{\small Rule~\ref{rule:#1}}}
+\newcommand{\TypeInf}[2]{\Syntax{#1}: #2}
+\newcommand{\Context}[2]{#1 \mathrel{\vdash} #2}
+\newcommand{\Evaluates}[2]{\Syntax{#1} \stackrel{e}{\rightarrow} #2}
+\newcommand{\ETran}[3]{\Syntax{#1} ~~\xxrightarrow{#2}{\Syntax{#3}}}
+%\newcommand{\ETran}[3]{\Syntax{#1} ~~\stackrel{\Syntax{#2}}{\longrightarrow}~~ \Syntax{#3}}
+\newcommand{\ELL}{\ell}
+\newcommand{\Seq}{$\mathbin{;}$}
+
+% general syntax macros
+%\newcommand{\produces}{\mathrel{\rightarrow}}
+%\newcommand{\PAlt}{$|$}% for productions in programs
+%\newcommand{\Alt}{\mathrel{|}}
+%\newcommand{\Quote}[1]{``{\tt #1}"}% for emacs ''
+\newcommand{\Syntax}[1]{\textsf{#1}}
+%\newcommand{\Keyword}[1]{\Syntax{\textbf{#1}}}
+
+% well formedness macros
+\newcommand{\WFStatement}[1]{WFStatement(\Syntax{#1})}
+%\newcommand{\WFDeclarations}[3]{WFDeclarations(\Syntax{#1},\Syntax{#2},\Syntax{#3})}
+\newcommand{\WFDeclaration}[1]{WFDeclaration(\Syntax{#1})}
+\newcommand{\WFBlock}[1]{WFBlock(\Syntax{#1})}
+\newcommand{\WFProcedures}[1]{WFProcedures(\Syntax{#1})}
+\newcommand{\WFProgram}[1]{WFProgram(\Syntax{#1})}
+\newcommand{\WFType}[1]{WFType(#1)}
+
+\newcommand{\EntryDecl}[3]{entryDecl(#1,\Syntax{#2},\Syntax{#3})}
+\newcommand{\Entry}[2]{entry(#1,\Syntax{#2})}
+
+% PL0 abstract syntax macros
+\newcommand{\Program}{\Syntax{program}}
+\newcommand{\Block}{\Syntax{block}}
+\newcommand{\NoDecl}{\Syntax{nodecl}}
+\newcommand{\Declaration}{\Syntax{d}}
+\newcommand{\Declarations}{\Syntax{ds}}
+\newcommand{\Ident}{\Syntax{id}}
+\newcommand{\Constant}{\Syntax{c}}
+\newcommand{\PType}{\Syntax{t}}
+\newcommand{\Statement}{\Syntax{s}}
+\newcommand{\Statements}{\Syntax{ls}}
+\newcommand{\LValue}{\Syntax{lv}}
+\newcommand{\Expression}{\Syntax{e}}
+\newcommand{\Number}{\Syntax{n}}
+\newcommand{\Unary}[2]{\Syntax{op($#1$,#2)}}
+\newcommand{\Binary}[3]{\Syntax{op($#2$,(#1,#3))}}
+\newcommand{\Narrow}[3]{\Syntax{narrow(#1,#2,#3)}}
+\newcommand{\Nil}{\Syntax{nil}}
+
+\newcommand{\Blk}[2]{\Syntax{blk(#1,#2)}}
+\newcommand{\State}[2]{\Syntax{state($#1$,#2)}}
+\newcommand{\Const}[1]{\Syntax{const(#1)}}
+\newcommand{\Type}[1]{\Syntax{type(#1)}}
+\newcommand{\Var}[1]{\Syntax{var(#1)}}
+\newcommand{\Procedure}[1]{\Syntax{proc(#1)}}
+\newcommand{\Assign}[2]{\Syntax{assign(#1,#2)}}
+\newcommand{\Write}[1]{\Syntax{write(#1)}}
+\newcommand{\Read}[1]{\Syntax{read(#1)}}
+\newcommand{\Call}[1]{\Syntax{call(#1)}}
+\newcommand{\If}[3]{\Syntax{if(#1,#2,#3)}}
+\newcommand{\While}[2]{\Syntax{while(#1,#2)}}
+\newcommand{\List}[1]{\Syntax{list(#1})}
+\newcommand{\Sequential}[2]{\Syntax{sequential(#1,#2)}}
+\newcommand{\Subrange}[2]{[#1\,..\,#2]}
+
+% Formatting programo%
+%\newenvironment{Program}{\begin{tt}\begin{tabbing}}{\end{tabbing}\end{tt}}
+\newcommand{\Keyword}[1]{\mbox{\color{blue}\sc\bf #1}}
+\newcommand{\Quotett}[1]{\mbox{\tt `#1'}}
+\newcommand{\SetConst}[1]{\{#1\}}
+\newcommand{\DefinitionModule}{\Keyword{definition~module~}}
+\newcommand{\Implementation}{\Keyword{implementation~module~}}
+\newcommand{\Import}{\Keyword{import~}}
+\newcommand{\From}{\Keyword{from~}}
+\newcommand{\Invariant}{\Keyword{invariant}}
+\newcommand{\Initially}{\Keyword{initially}}
+\newcommand{\Boolean}{\Keyword{boolean}}
+\newcommand{\Integer}{\Keyword{integer}}
+\newcommand{\Cardinal}{\Keyword{cardinal}}
+\newcommand{\Real}{\Keyword{real}}
+\newcommand{\Array}{\Keyword{array~}}
+\newcommand{\Record}{\Keyword{record}}
+\newcommand{\Set}{\Keyword{set~}}
+\newcommand{\Of}{\Keyword{of~}}
+\newcommand{\Pointer}{\Keyword{pointer~to~}}
+\newcommand{\Proc}{\Keyword{procedure~}}
+\newcommand{\Return}{\Keyword{return~}}
+\newcommand{\Begin}{\Keyword{begin}}
+\newcommand{\End}{\Keyword{end}}
+\newcommand{\Then}{\Keyword{then}}
+\newcommand{\Else}{\Keyword{else~}}
+\newcommand{\Elsif}{\Keyword{elsif~}}
+\newcommand{\Do}{\Keyword{do}}
+\newcommand{\For}{\Keyword{for~}}
+\newcommand{\To}{\Keyword{to~}}
+\newcommand{\By}{\Keyword{by~}}
+\newcommand{\With}{\Keyword{with~}}
+\newcommand{\Mod}{\Keyword{mod~}}
+\newcommand{\Div}{\Keyword{div~}}
+\newcommand{\In}{\Keyword{in~}}
+\newcommand{\AAnd}{\Keyword{and~}}
+\newcommand{\Or}{\Keyword{or~}}
+\newcommand{\Not}{\Keyword{not~}}
+\newcommand{\True}{\Keyword{true}}
+\newcommand{\False}{\Keyword{false}}
+
+\definecolor{DarkGreen}{rgb}{0,0.5,0}
+\newcommand{\Comment}[1]{\mbox{\color{DarkGreen} // #1}}
+
+\newcommand{\Progtext}[1]{\textsf{#1}}
+
+\makeatletter
+\newcommand{\ChainRel}[1]{\crcr \noalign{\penalty\interdisplaylinepenalty}
+  \hspace*{-1em}#1
+  \@ifnextchar*{\@ChainRelCommment}{}}
+\newcommand{\ChainRelFormat}[1]{\mbox{~~~~#1}}
+\def\@ChainRelCommment*[#1]{\ChainRelFormat{#1}
+  \crcr \noalign{\penalty\interdisplaylinepenalty}}
+\newcommand{\StartRef}[1]{\hspace*{-1.5em}(\ref{#1}) \refsto
+  \@ifnextchar[{\@StartRefCommment}{}}
+\def\@StartRefCommment[#1]{\mbox{#1}
+  \crcr \noalign{\penalty\interdisplaylinepenalty}}
+\makeatother
+%\newcommand{\Implies}{\ChainRel{\implies}}
+%\newcommand{\IFF}{\ChainRel{\iff}}
+%\newcommand{\Entails}{\ChainRel{\entails}}
+%\newcommand{\Equiv}{\ChainRel{\equiv}}
+%\newcommand{\NotEquiv}{\ChainRel{\not\equiv}}
+%\newcommand{\Because}{\ChainRel{\entailed}}
+%\newcommand{\ImpliedBy}{\ChainRel{\Leftarrow}}
+%\newcommand{\Refsto}{\ChainRel{\refsto}}
+%\newcommand{\Refines}{\ChainRel{\refines}}
+%\newcommand{\Refeq}{\ChainRel{\refeq}}
+\newcommand{\Equals}{\ChainRel{=}}
+%\newcommand{\Subsets}{\ChainRel{\subseteq}}
+
+\newenvironment{refine}{\begin{displaymath}\begin{array}{l}}{\end{array}\end{displaymath}}
+
+\makeatletter
+%\newcommand{\transstep}[1]{\mathrel{\stackrel{#1}{\trasymbol}}}
+%\newcommand \trasymbol {\longrightarrow}
+%\newcommand{\xtransstep}[1]{\xxrightarrow{#1}{}}
+\newcommand{\xxrightarrow}[2][]{\ext@arrow 0359\rightarrowfill@{#1}{#2}}
+%\newcommand \transbigstep[1]{\xtwoheadrightarrow{\raisebox{2mm}{\null}\hbox{$_{#1}$}}}
+%\newcommand{\xtwoheadrightarrow}[2][]{\ext@arrow 0359\twoheadrightarrowfill@{#1}{#2}}
+%\def\twoheadrightarrowfill@{\arrowfill@\relbar\relbar\twoheadrightarrow}
+%\newcommand{\Rule}[2]{\frac{\begin{array}{c}#1\end{array}}{\begin{array}{c}#2\end{array}}}
+\makeatother
